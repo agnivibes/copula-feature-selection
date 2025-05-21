@@ -11,16 +11,6 @@ All results, discussions, and implications are provided in our accompanying rese
 
 ---
 
-## 📁 Project Structure
-
-- `a2_diabetes_feature_selection.py`: Main script containing the end-to-end pipeline
-- `feature_selection_comparison_results.csv`: Output table with all classification results
-- `Permutation Importance.png`: Visual explanation of feature importance for interpretability
-- `models/`: Contains saved model weights (optional future extension)
-- `data/`: CDC dataset is loaded directly via API (no need for local storage)
-
----
-
 ## 📦 Requirements
 
 - **Python** 3.11+
