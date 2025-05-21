@@ -32,7 +32,7 @@ python a2_feature_selection.py
 ```
 
 ## 🔬 Research Paper
-Aich, A, Murshed, M, Mayeaux, A, Hewage, S. Can Copulas Be Used in Feature Selection? 
+Aich, A., Murshed, M., Mayeaux, A., Hewage, S. (2025). Can Copulas Be Used in Feature Selection? 
 A Machine Learning Study on Diabetes Risk Prediction [Manuscript under review]
 
 ## 📊 Citation
