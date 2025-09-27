@@ -1,11 +1,11 @@
-# A2 Copula-Based Feature Selection for Diabetes Risk Prediction 💡📈
+# Copula-Based Feature Selection for Diabetes Risk Prediction 💡📈
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![scikit-learn](https://img.shields.io/badge/ML-scikit--learn%2Fxgboost%2Ftensorflow-orange)](https://scikit-learn.org/stable/)
 [![Copulas](https://img.shields.io/badge/Stats-Copula%20Modeling-6E40AA)](https://en.wikipedia.org/wiki/Copula_(probability_theory))
 [![Dataset](https://img.shields.io/badge/Data-UCI%20CDC%20Diabetes-33AA55)](https://doi.org/10.24432/C53919)
 
-This repository contains the full implementation of our machine learning pipeline that introduces a **copula-based approach** for feature selection, tailored for diabetes risk prediction. We use the **A2 copula's upper-tail dependence coefficient** to rank features based on their extreme-value co-movement with the diabetes label. This novel technique is benchmarked against Mutual Information (MI) and Genetic Algorithm (GA) feature selection methods.
+This repository contains the full implementation of our machine learning pipeline that introduces a **copula-based approach** for feature selection, tailored for diabetes risk prediction. We use the **Gumbel copula's upper-tail dependence coefficient** to rank features based on their extreme-value co-movement with the diabetes label. This novel technique is benchmarked against Mutual Information (MI), mRMR, ReliefF and L1EN feature selection methods.
 
 All results, discussions, and implications are provided in our accompanying research paper. This repository focuses strictly on code and reproducibility.
 
@@ -13,22 +13,22 @@ All results, discussions, and implications are provided in our accompanying rese
 
 ## 📦 Requirements
 
-- **Python** 3.11+
+- **Python** 3+
 - Install required packages via:
 
 ```bash
-pip install numpy pandas matplotlib scikit-learn xgboost tensorflow ucimlrepo
+!pip install numpy pandas scipy scikit-learn xgboost statsmodels joblib ucimlrepo seaborn
 ```
 
 ## 🚀 Getting Started
 ```bash
-git clone https://github.com/agnivibes/a2-copula-feature-selection.git
+git clone https://github.com/agnivibes/copula-feature-selection.git
 cd a2-copula-feature-selection
 ```
 
 ## Run the full analysis:
 ```bash
-python a2_feature_selection.py
+python copula_feature_selection.py
 ```
 
 ## 🔬 Research Paper
