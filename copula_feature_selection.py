@@ -1,6 +1,7 @@
 
+# -*- coding: utf-8 -*-
 # ======================================================
-# Gumbel λU Feature Selection 
+# Gumbel λU Feature Selection — EXTENDED MODE (PyCharm)
 # ======================================================
 # Baselines: Mutual Information (MI), L1/ElasticNet (L1EN), mRMR, ReliefF
 # Our method: Gumbel λU (tail dependence)
@@ -75,9 +76,9 @@ CFG = {
 
     # Perturbations (light)
     "PERTURB": True,
-    "ROB_NOISE_SD": [0.0, 0.10],    # baseline included as 0.0
-    "ROB_LABEL_FLIP": [0.00, 0.05],
-    "ROB_MCAR": [0.00, 0.10],
+    "ROB_NOISE_SD": [0.0, 0.10, 0.20],    # baseline included as 0.0
+    "ROB_LABEL_FLIP": [0.00, 0.05, 0.10],
+    "ROB_MCAR": [0.00, 0.10, 0.20],
     "ROB_SUBSAMPLE": [1.00],        # keep full (change to 0.70 to test subsample)
 
     # Calibrate & class weights
@@ -609,14 +610,20 @@ def run_feature_selectors(X_tr, y_tr, cfg, T):
 
     return df_gumbel, top_gumbel, df_mi, top_mi, top_l1en, top_mrmr, df_relf, top_relf
 
-# -------------------------------
 # Evaluation (models x feature sets)
 # -------------------------------
-def evaluate_feature_sets(dataset_name, X_tr, X_val, X_te, y_tr, y_val, y_te,
+# pass full train (X_trF,y_trF) + split train (X_trA,y_trA) + val + test
+def evaluate_feature_sets(dataset_name, 
+                          X_trF, y_trF,    # full training = X_trA ∪ X_val
+                          X_trA, y_trA,    # subset used to learn parameters before thresholding
+                          X_val, y_val, 
+                          X_te,  y_te,
                           feature_sets, cfg, outdir):
     EVAL_MODELS = cfg["EVAL_MODELS"]
     SEED = cfg["SEED"]
-    pos = np.sum(y_tr == 1); neg = np.sum(y_tr == 0)
+
+    # class balance / weights based on FULL training set
+    pos = np.sum(y_trF == 1); neg = np.sum(y_trF == 0)
     scale_pos_weight = (neg / pos) if pos > 0 else 1.0
 
     results = []
@@ -626,45 +633,54 @@ def evaluate_feature_sets(dataset_name, X_tr, X_val, X_te, y_tr, y_val, y_te,
     pr_store_by_set    = defaultdict(list)
 
     for set_name, feats in feature_sets.items():
-        Xtr_set, Xval_set, Xte_set = X_tr[feats], X_val[feats], X_te[feats]
+        # split-train / val / test slices for THIS feature set
+        Xtr_set  = X_trA[feats]
+        Xval_set = X_val[feats]
+        Xte_set  = X_te[feats]
+
+        # scaler for LR only (fit on split-train)
         scaler_lr = StandardScaler().fit(Xtr_set)
 
         for m_name in EVAL_MODELS:
             model = build_model(m_name, cfg, SEED, scale_pos_weight)
 
+            # inputs for threshold learning
             if m_name == 'LR':
-                Xtr_use = scaler_lr.transform(Xtr_set)
+                Xtr_use  = scaler_lr.transform(Xtr_set)
                 Xval_use = scaler_lr.transform(Xval_set)
-                Xte_use  = scaler_lr.transform(Xte_set)
             else:
-                Xtr_use, Xval_use, Xte_use = Xtr_set, Xval_set, Xte_set
+                Xtr_use, Xval_use = Xtr_set, Xval_set
 
-            sample_w = compute_sample_weight(class_weight='balanced', y=y_tr) if m_name=='GB' else None
+            # GB uses sample weights; learn parameters on split-train
+            sample_w = compute_sample_weight(class_weight='balanced', y=y_trA) if m_name=='GB' else None
 
             if isinstance(model, CalibratedClassifierCV):
-                model.fit(Xtr_use, y_tr, sample_weight=None if m_name!='GB' else sample_w)
+                model.fit(Xtr_use, y_trA, sample_weight=None if m_name!='GB' else sample_w)
             else:
-                model.fit(Xtr_use, y_tr, sample_weight=sample_w)
+                model.fit(Xtr_use, y_trA, sample_weight=sample_w)
 
+            # choose threshold on validation
             y_val_prob = model.predict_proba(Xval_use)[:, 1]
             thr = pick_threshold(y_val, y_val_prob, criterion=cfg["THRESH_CRITERION"])
 
+            # ---- FINAL FIT on FULL TRAIN (X_trF, y_trF) ----
             model_full = build_model(m_name, cfg, SEED, scale_pos_weight)
             if m_name == 'LR':
-                scaler_full = StandardScaler().fit(X_tr[feats])
-                Xtr_full_use = scaler_full.transform(X_tr[feats])
+                scaler_full  = StandardScaler().fit(X_trF[feats])
+                Xtr_full_use = scaler_full.transform(X_trF[feats])
                 Xte_full_use = scaler_full.transform(X_te[feats])
             else:
-                Xtr_full_use, Xte_full_use = X_tr[feats], X_te[feats]
+                Xtr_full_use = X_trF[feats]
+                Xte_full_use = X_te[feats]
 
-            sample_w_full = compute_sample_weight(class_weight='balanced', y=y_tr) if m_name=='GB' else None
+            sample_w_full = compute_sample_weight(class_weight='balanced', y=y_trF) if m_name=='GB' else None
 
             if isinstance(model_full, CalibratedClassifierCV):
-                model_full.fit(Xtr_full_use, y_tr, sample_weight=None if m_name!='GB' else sample_w_full)
+                model_full.fit(Xtr_full_use, y_trF, sample_weight=None if m_name!='GB' else sample_w_full)
             else:
-                model_full.fit(Xtr_full_use, y_tr, sample_weight=sample_w_full)
+                model_full.fit(Xtr_full_use, y_trF, sample_weight=sample_w_full)
 
-            # TEST
+            # TEST metrics (threshold from val)
             y_prob = model_full.predict_proba(Xte_full_use)[:, 1]
             y_pred = (y_prob >= thr).astype(int)
 
@@ -728,7 +744,7 @@ def evaluate_feature_sets(dataset_name, X_tr, X_val, X_te, y_tr, y_val, y_te,
         if s_name in pr_store_by_set:
             plot_superimposed_pr_by_set(s_name, pr_store_by_set[s_name], outdir)
 
-    # metric curves — include extra sets that were added
+    # metric curves
     METRICS = ['Accuracy','Balanced_Acc','ROC_AUC','PR_AUC','Precision','Recall','F1']
     core = ['All','Gumbel','MI','L1EN','mRMR','ReliefF']
     extras = [s for s in df_res['Set'].unique() if s not in core]
@@ -741,6 +757,7 @@ def evaluate_feature_sets(dataset_name, X_tr, X_val, X_te, y_tr, y_val, y_te,
         plot_metric_curve_all_models(df_res, metric, outdir, order=order, models=sorted(set(df_res['Model'])))
 
     return df_res
+
 
 # -------------------------------
 # Stability (Jaccard / rank corr)
@@ -1044,6 +1061,7 @@ def run_experiment(dataset_name, X, y, cfg=None, out_root="./outputs"):
 
     # Timings
     T = Timer()
+    T.start("total")
 
     # FS on TRAIN only
     df_gumbel, top_gumbel, df_mi, top_mi, top_l1en, top_mrmr, df_relf, top_relf = run_feature_selectors(X_tr, y_tr, cfg, T)
@@ -1094,8 +1112,13 @@ def run_experiment(dataset_name, X, y, cfg=None, out_root="./outputs"):
     }).to_csv(outdir / "topk_features_summary.csv", index=False)
 
     # Evaluate all sets/models
-    df_res = evaluate_feature_sets(dataset_name, X_trA, X_val, X_te, y_trA, y_val, y_te,
-                                   feature_sets, cfg, figdir)
+    df_res = evaluate_feature_sets(dataset_name,
+                               X_tr,  y_tr,     # full train
+                               X_trA, y_trA,    # subset train
+                               X_val, y_val,
+                               X_te,  y_te,
+                               feature_sets, cfg, figdir)
+
     df_res.to_csv(outdir / "feature_selection_comparison_results.csv", index=False)
 
     # Significance tests anchored on Gumbel with best model
@@ -1147,7 +1170,8 @@ def run_experiment(dataset_name, X, y, cfg=None, out_root="./outputs"):
         rob.to_csv(outdir / "robustness_summary.csv", index=False)
 
     # Timing & notes
-    T.stop("end"); T.dump(outdir / "runtime_profile.csv")
+    T.stop("total")
+    T.dump(outdir / "runtime_profile.csv")
     with open(outdir / "complexity_note.txt","w") as f:
         n, d = X.shape[0], X.shape[1]
         f.write("Complexity notes (informal):\n")
@@ -1225,7 +1249,7 @@ if __name__ == "__main__":
     print("CDC outputs ->", out_dir_cdc)
 
     # ---- Run PIMA ----
-    pima_path = "/content/pima.csv"   # 👈 Your actual file path. We ran this in Google Colab Pro.
+    pima_path = "/content/pima.csv"   # 👈 Your file path! We ran our code in Google Colab pro.
     X_pim, y_pim = load_pima(pima_path)
     out_dir_pima = run_experiment("PIMA", X_pim, y_pim, cfg=cfg_pima, out_root=CFG["OUT_ROOT"])
     print("PIMA outputs ->", out_dir_pima)
