@@ -8,7 +8,7 @@ This repository contains the full implementation of our machine learning pipelin
 
 All results, discussions, and implications are provided in our accompanying research paper. This repository focuses strictly on code and reproducibility.
 
-Information on the datasets are provided below.
+Information on the datasets used are provided below.
 
 ## CDC Diabetes Health Indicators Dataset  
 
