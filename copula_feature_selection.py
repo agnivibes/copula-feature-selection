@@ -612,10 +612,10 @@ def run_feature_selectors(X_tr, y_tr, cfg, T):
 # Evaluation (models x feature sets)
 # -------------------------------
 # pass full train (X_trF,y_trF) + split train (X_trA,y_trA) + val + test
-def evaluate_feature_sets(dataset_name, 
+def evaluate_feature_sets(dataset_name,
                           X_trF, y_trF,    # full training = X_trA ∪ X_val
                           X_trA, y_trA,    # subset used to learn parameters before thresholding
-                          X_val, y_val, 
+                          X_val, y_val,
                           X_te,  y_te,
                           feature_sets, cfg, outdir):
     EVAL_MODELS = cfg["EVAL_MODELS"]
@@ -1163,10 +1163,13 @@ def run_experiment(dataset_name, X, y, cfg=None, out_root="./outputs"):
             f.write(f"Jaccard mean±sd: {j_mu:.3f}±{j_sd:.3f}\n")
             f.write(f"Spearman rho mean±sd: {r_mu:.3f}±{r_sd:.3f}\n")
 
-    # Perturbations (using Gumbel features; GB model by default)
+
+    # Perturbations (GB for CDC; RF for PIMA)
     if cfg["PERTURB"] and len(top_gumbel) > 0:
-        rob = eval_under_perturbations(X_tr, y_tr, X_te, y_te, top_gumbel, cfg, model_name='GB')
+        rob_model = 'GB' if dataset_name.upper() == 'CDC' else 'RF'
+        rob = eval_under_perturbations(X_tr, y_tr, X_te, y_te, top_gumbel, cfg, model_name=rob_model)
         rob.to_csv(outdir / "robustness_summary.csv", index=False)
+
 
     # Timing & notes
     T.stop("total")
@@ -1230,7 +1233,7 @@ if __name__ == "__main__":
 
     # CDC config
     cfg_cdc = {
-        "TOPK": 7,
+        "TOPK": 10,
         "K_SWEEP": [3, 5, 7, 10],
         "DO_K_SWEEP": True
     }
@@ -1248,7 +1251,7 @@ if __name__ == "__main__":
     print("CDC outputs ->", out_dir_cdc)
 
     # ---- Run PIMA ----
-    pima_path = "/content/pima.csv"   # 👈 Your file path! We ran our code in Google Colab pro.
+    pima_path = "/content/pima.csv"   # 👈 Your file path! We ran this code in Google Colab Pro!
     X_pim, y_pim = load_pima(pima_path)
     out_dir_pima = run_experiment("PIMA", X_pim, y_pim, cfg=cfg_pima, out_root=CFG["OUT_ROOT"])
     print("PIMA outputs ->", out_dir_pima)
