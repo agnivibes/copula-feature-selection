@@ -1,10 +1,11 @@
 
+# -*- coding: utf-8 -*-
 # ======================================================
-# Gumbel λU Feature Selection 
+# Gumbel λU Feature Selection — EXTENDED MODE (PyCharm)
 # ======================================================
 # Baselines: Mutual Information (MI), L1/ElasticNet (L1EN), mRMR, ReliefF
 # Our method: Gumbel λU (tail dependence)
-# Extras: λU bootstrap CI (B=1000), robustness, perturbations (light), k-sweep
+# Extras: λU bootstrap CI (B=1000), stability, perturbations (light), k-sweep
 # Models: RF, XGB, LR, GB
 # Plots & CSVs saved to ./outputs/<DATASET>/
 # ======================================================
@@ -953,40 +954,80 @@ def compute_permutation_importance_for_gumbel_best(
 # -------------------------------
 # Minimal DeLong implementation (paired AUC)
 # -------------------------------
-def _compute_midrank(x):
-    J = np.argsort(x); Z = x[J]; N = len(x)
-    T = np.zeros(N, dtype=float); i = 0
+# --- drop-in DeLong (covariance-aware) replacement ---
+
+import numpy as np
+from scipy.stats import norm
+
+def _midrank(x):
+    J = np.argsort(x)
+    Z = x[J]
+    N = len(x)
+    T = np.zeros(N, dtype=float)
+    i = 0
     while i < N:
         j = i
-        while j < N and Z[j] == Z[i]: j += 1
+        while j < N and Z[j] == Z[i]:
+            j += 1
         T[i:j] = 0.5*(i + j - 1) + 1
         i = j
-    T2 = np.empty(N, dtype=float); T2[J] = T; return T2
+    out = np.empty(N, dtype=float)
+    out[J] = T
+    return out
 
-def _fast_delong(preds_sorted_transposed, label_1_count):
-    m = label_1_count; n = preds_sorted_transposed.shape[1] - m
-    positive_examples = preds_sorted_transposed[:, :m]; negative_examples = preds_sorted_transposed[:, m:]
-    k = preds_sorted_transposed.shape[0]
-    tx = np.empty((k, m)); ty = np.empty((k, n))
-    for r in range(k):
-        tx[r, :] = _compute_midrank(positive_examples[r, :])
-        ty[r, :] = _compute_midrank(negative_examples[r, :])
+def _delong_covariance(preds, y_true):
+    """
+    preds: array (k_models, n_samples) of scores
+    y_true: array (n_samples,) of {0,1}
+    Returns: aucs (k,), covariance matrix S (k,k) for AUCs (DeLong)
+    """
+    y_true = np.asarray(y_true).astype(int)
+    preds = np.asarray(preds)
+    pos = (y_true == 1)
+    m = int(pos.sum())
+    n = preds.shape[1] - m
+    if m == 0 or n == 0:
+        raise ValueError("DeLong requires at least one positive and one negative sample.")
+
+    # sort so that positives come first
+    order = np.argsort(~pos)            # positives first (False=0 sorted before True=1)
+    P = preds[:, order]
+
+    # midranks
+    k = P.shape[0]
+    tx = np.empty((k, m))
+    ty = np.empty((k, n))
     tz = np.empty((k, m + n))
     for r in range(k):
-        tz[r, :] = _compute_midrank(preds_sorted_transposed[r, :])
+        tx[r] = _midrank(P[r, :m])
+        ty[r] = _midrank(P[r, m:])
+        tz[r] = _midrank(P[r])
+
+    # AUCs
     aucs = (tz[:, :m].sum(axis=1) - m*(m+1)/2.0) / (m*n)
-    v01 = (tz[:, :m] - tx)**2; v10 = (tz[:, m:] - ty)**2
-    sx = v01.sum(axis=1) / (m*(m-1)); sy = v10.sum(axis=1) / (n*(n-1))
-    s = sx/m + sy/n; return aucs, s
+
+    # DeLong components (each row r is a model; columns are observations)
+    V01 = (tz[:, :m] - tx) / n          # per-positive contributions
+    V10 = 1.0 - (tz[:, m:] - ty) / m    # per-negative contributions
+
+    # Empirical covariance across models
+    # np.cov expects variables in rows, observations in columns (rowvar=True)
+    S01 = np.cov(V01, bias=False) if m > 1 else np.zeros((k, k))
+    S10 = np.cov(V10, bias=False) if n > 1 else np.zeros((k, k))
+
+    # DeLong covariance of AUCs
+    S = S01 / m + S10 / n
+    return aucs, S
 
 def delong_roc_test(y_true, p1, p2):
-    y_true = np.asarray(y_true).astype(int); pos = y_true == 1; m = int(pos.sum())
-    scores = np.vstack([p1, p2]); idx = np.argsort(~pos)  # positives first
-    sorted_scores = scores[:, idx]
-    aucs, vars_ = _fast_delong(sorted_scores, m)
-    delta = aucs[0] - aucs[1]; var = vars_[0] + vars_[1]
-    z = delta / np.sqrt(max(var, 1e-12)); p = 2*(1 - norm.cdf(abs(z)))
-    return p
+    preds = np.vstack([p1, p2])
+    aucs, S = _delong_covariance(preds, y_true)
+    diff = aucs[0] - aucs[1]
+    var = S[0,0] + S[1,1] - 2.0*S[0,1]   # includes covariance term
+    z = diff / np.sqrt(max(var, 1e-12))
+    return float(2.0 * (1.0 - norm.cdf(abs(z))))
+
+
 
 def run_significance_tests(y_te, outdir, anchor_set, models=("RF","XGB","LR","GB")):
     outdir = Path(outdir)
@@ -1251,7 +1292,7 @@ if __name__ == "__main__":
     print("CDC outputs ->", out_dir_cdc)
 
     # ---- Run PIMA ----
-    pima_path = "/content/pima.csv"   # 👈 Your file path! We ran this code in Google Colab Pro!
+    pima_path = "/content/pima.csv"   # 👈 Your file path!! We have used Google Colab pro!
     X_pim, y_pim = load_pima(pima_path)
     out_dir_pima = run_experiment("PIMA", X_pim, y_pim, cfg=cfg_pima, out_root=CFG["OUT_ROOT"])
     print("PIMA outputs ->", out_dir_pima)
