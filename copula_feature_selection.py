@@ -1,3 +1,5 @@
+
+# -*- coding: utf-8 -*-
 # ======================================================
 # Gumbel λU Feature Selection — EXTENDED MODE (PyCharm)
 # ======================================================
@@ -66,7 +68,7 @@ CFG = {
 
     # Stability
     "STABILITY": True,
-    "STABILITY_B": 100,
+    "STABILITY_B": 1000,
 
     # k-sweep (dataset-specific overrides below)
     "DO_K_SWEEP": True,
@@ -74,10 +76,10 @@ CFG = {
 
     # Perturbations (light)
     "PERTURB": True,
-    "ROB_NOISE_SD": [0.0, 0.10, 0.20],    # baseline included as 0.0
-    "ROB_LABEL_FLIP": [0.00, 0.05, 0.10],
-    "ROB_MCAR": [0.00, 0.10, 0.20],
-    "ROB_SUBSAMPLE": [1.00],        # keep full (change to 0.70 to test subsample)
+    "ROB_NOISE_SD": [0.0, 0.10, 0.20, 0.35, 0.50],    # baseline included as 0.0
+    "ROB_LABEL_FLIP": [0.00, 0.05, 0.10, 0.20, 0.30],
+    "ROB_MCAR": [0.00, 0.10, 0.20, 0.35, 0.50],
+    "ROB_SUBSAMPLE": [1.00, 0.75, 0.50],        # keep full (change to 0.70 to test subsample)
 
     # Calibrate & class weights
     "CALIBRATE": True,
@@ -1290,7 +1292,7 @@ if __name__ == "__main__":
     print("CDC outputs ->", out_dir_cdc)
 
     # ---- Run PIMA ----
-    pima_path = "/content/pima.csv"   # 👈 Your file path!! We have used Google Colab pro!
+    pima_path = "/content/pima.csv"   # 👈 Your file path! I have used Google Colab Pro!
     X_pim, y_pim = load_pima(pima_path)
     out_dir_pima = run_experiment("PIMA", X_pim, y_pim, cfg=cfg_pima, out_root=CFG["OUT_ROOT"])
     print("PIMA outputs ->", out_dir_pima)
