@@ -1,5 +1,5 @@
 # ======================================================
-# Gumbel λU Feature Selection — EXTENDED MODE (PyCharm)
+# Gumbel λU Feature Selection
 # ======================================================
 # Baselines: Mutual Information (MI), L1/ElasticNet (L1EN), mRMR, ReliefF
 # Our method: Gumbel λU (tail dependence)
