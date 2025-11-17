@@ -47,15 +47,14 @@ python copula_feature_selection.py
 ```
 
 ## 🔬 Research Paper
-Aich, A., Murshed, M., Mayeaux, A., Hewage, S. (2025). Can Copulas Be Used in Feature Selection? 
-A Machine Learning Study on Diabetes Risk Prediction [Manuscript under review]
+Aich, A., Murshed, M., Mayeaux, A., Hewage, S. (2025). A Copula Based Supervised Filter for Feature Selection in Machine Learning Driven Diabetes Risk Prediction [Manuscript under review]
 
 ## 📊 Citation
 If you use this code or method in your own work, please cite:
 
 @article{Aich2025A2CopulaDiabetes,
   title   = {Can Copulas Be Used in Feature Selection? A Machine Learning Study on Diabetes Risk Prediction},
-  author  = {Aich, Agnideep and Murshed, Md Monzur and Mayeaux, Amanda and Hewage, Sameera},
+  author  = {Aich, Agnideep and Murshed, Md Monzur and Hewage, Sameera and Mayeaux, Amanda},
   journal = {},
   year    = {2025},
   note    = {Manuscript under review}
