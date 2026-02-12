@@ -1,3 +1,5 @@
+!pip -q install ucimlrepo
+
 # ======================================================
 # Gumbel λU Feature Selection
 # ======================================================
@@ -608,6 +610,43 @@ def run_feature_selectors(X_tr, y_tr, cfg, T):
 
     return df_gumbel, top_gumbel, df_mi, top_mi, top_l1en, top_mrmr, df_relf, top_relf
 
+
+
+def bootstrap_auc_ci(y_true, y_prob, B=2000, seed=123, alpha=0.05):
+    """
+    Bootstrap CI for ROC AUC by resampling test indices with replacement.
+    Returns (lo, hi). Does not change the point estimate.
+    """
+    y_true = np.asarray(y_true).astype(int)
+    y_prob = np.asarray(y_prob).astype(float)
+    n = len(y_true)
+    rng = np.random.default_rng(seed)
+
+    # precompute indices for speed + determinism
+    aucs = np.empty(B, dtype=float)
+    for b in range(B):
+        idx = rng.integers(0, n, size=n)
+        yt = y_true[idx]
+        yp = y_prob[idx]
+        # if resample has only one class, skip by drawing again
+        if yt.min() == yt.max():
+            # try a few quick redraws
+            for _ in range(10):
+                idx = rng.integers(0, n, size=n)
+                yt = y_true[idx]; yp = y_prob[idx]
+                if yt.min() != yt.max():
+                    break
+        if yt.min() == yt.max():
+            aucs[b] = np.nan
+        else:
+            aucs[b] = roc_auc_score(yt, yp)
+
+    aucs = aucs[~np.isnan(aucs)]
+    lo = float(np.quantile(aucs, alpha/2))
+    hi = float(np.quantile(aucs, 1 - alpha/2))
+    return lo, hi
+
+
 # Evaluation (models x feature sets)
 # -------------------------------
 # pass full train (X_trF,y_trF) + split train (X_trA,y_trA) + val + test
@@ -683,6 +722,7 @@ def evaluate_feature_sets(dataset_name,
             y_pred = (y_prob >= thr).astype(int)
 
             auc  = roc_auc_score(y_te, y_prob)
+            auc_lo, auc_hi = bootstrap_auc_ci(y_te, y_prob, B=1000, seed=cfg["SEED"])
             ap   = average_precision_score(y_te, y_prob)
             bal  = balanced_accuracy_score(y_te, y_pred)
             cr   = classification_report(y_te, y_pred, output_dict=True)
@@ -694,7 +734,8 @@ def evaluate_feature_sets(dataset_name,
                 'Precision': cr['weighted avg']['precision'],
                 'Recall': cr['weighted avg']['recall'],
                 'F1': cr['weighted avg']['f1-score'],
-                'ROC_AUC': auc, 'PR_AUC': ap
+                'ROC_AUC': auc, 'PR_AUC': ap,
+                'ROC_AUC_CI_L': auc_lo, 'ROC_AUC_CI_U': auc_hi
             })
 
             # Curves & saves
@@ -1066,6 +1107,7 @@ def run_experiment(dataset_name, X, y, cfg=None, out_root="./outputs"):
     set_seed(cfg["SEED"])
 
     outdir = Path(out_root) / dataset_name
+    outdir.mkdir(parents=True, exist_ok=True) 
     figdir = outdir / "figures"; figdir.mkdir(parents=True, exist_ok=True)
 
     # Split
@@ -1078,8 +1120,8 @@ def run_experiment(dataset_name, X, y, cfg=None, out_root="./outputs"):
             X_tr=X_tr,
             X_te=X_te,
             outdir=outdir,
-            cols=CFG.get("PIMA_ZERO_MISS_COLS", []),
-            enable=CFG.get("PIMA_TREAT_ZEROS_AS_MISSING", True),
+            cols=cfg.get("PIMA_ZERO_MISS_COLS", []),
+            enable=cfg.get("PIMA_TREAT_ZEROS_AS_MISSING", True),
         )
 
 
