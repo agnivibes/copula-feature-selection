@@ -47,7 +47,7 @@ python copula_feature_selection.py
 ```
 
 ## 🔬 Research Paper
-Aich, A., Murshed, M., Hewage, S., Mayeaux, A. (2025). A Copula Based Supervised Filter for Feature Selection in Machine Learning Driven Diabetes Risk Prediction [Manuscript under review].
+Aich, A., Murshed, M., Hewage, S., Mayeaux, A. (2025). A Copula Based Supervised Filter for Feature Selection in Machine Learning Driven Diabetes Risk Prediction. Scientific Reports. 
 
 ## 📊 Citation
 If you use this code or method in your own work, please cite:
@@ -55,9 +55,9 @@ If you use this code or method in your own work, please cite:
 @article{Aich2025CopulaDiabetes,
   title   = {A Copula Based Supervised Filter for Feature Selection in Machine Learning Driven Diabetes Risk Prediction},
   author  = {Aich, Agnideep and Murshed, Md Monzur and Hewage, Sameera and Mayeaux, Amanda},
-  journal = {},
-  year    = {2025},
-  note    = {Manuscript under review}
+  journal = {Scientific Reports},
+  year    = {2026},
+  doi    = {10.1038/s41598-026-41874-9}
 }
 
 ## 📬 Contact
