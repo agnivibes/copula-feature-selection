@@ -57,7 +57,7 @@ If you use this code or method in your own work, please cite:
   author  = {Aich, Agnideep and Murshed, Md Monzur and Hewage, Sameera and Mayeaux, Amanda},
   journal = {Scientific Reports},
   year    = {2026},
-  url    = {https://doi.org/10.1038/s41598-026-41874-9}
+  doi    = {10.1038/s41598-026-41874-9}
 }
 
 ## 📬 Contact
