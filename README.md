@@ -52,7 +52,7 @@ Aich, A., Murshed, M., Hewage, S., Mayeaux, A. (2025). A Copula Based Supervised
 ## 📊 Citation
 If you use this code or method in your own work, please cite:
 
-@article{Aich2025CopulaDiabetes,
+@article{Aich2026CopulaDiabetes,
   title   = {A Copula Based Supervised Filter for Feature Selection in Machine Learning Driven Diabetes Risk Prediction},
   author  = {Aich, Agnideep and Murshed, Md Monzur and Hewage, Sameera and Mayeaux, Amanda},
   journal = {Scientific Reports},
